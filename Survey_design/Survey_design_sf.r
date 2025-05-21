@@ -124,12 +124,14 @@ Survey.design <- function(yr = as.numeric(format(Sys.time(), "%Y")) ,direct, exp
               "https://raw.githubusercontent.com/Mar-scal/Assessment_fns/master/Maps/github_spatial_import.R",
               "https://raw.githubusercontent.com/Mar-scal/Assessment_fns/master/Maps/combo_shp.R")
     # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
-    for(fun in funs) 
-    {
-      download.file(fun,destfile = basename(fun))
-      source(paste0(getwd(),"/",basename(fun)))
-      file.remove(paste0(getwd(),"/",basename(fun)))
-    } # end for(un in funs)
+    dir <- tempdir()
+for(fun in funs) 
+{
+  temp <- dir
+  download.file(fun,destfile = paste0(dir, "\\", basename(fun)))
+  source(paste0(dir,"/",basename(fun)))
+  file.remove(paste0(dir,"/",basename(fun)))
+} # end for(un in funs)
   } # end if(repo == 'github')
   
   if(repo !='github')
@@ -158,9 +160,9 @@ Survey.design <- function(yr = as.numeric(format(Sys.time(), "%Y")) ,direct, exp
   if(repo =='github')
   {
     #surv.polyset <- read.csv(paste(direct,"Data/Maps/approved/Survey/survey_detail_polygons.csv",sep=""),stringsAsFactors = F) #Read1
-    surv.polyset <- github_spatial_import(subfolder="offshore_survey_strata", "offshore_survey_strata.zip", direct_fns=direct_fns, quiet=T)
+    surv.polyset <- github_spatial_import(subfolder="offshore_survey_strata", "offshore_survey_strata.zip", quiet=T)
     #areas <- read.csv(paste(direct,"Data/Maps/approved/Fishing_Area_Borders/Offshore.csv",sep=""),stringsAsFactors = F) #Read1
-    areas <- github_spatial_import(subfolder="offshore", "offshore.zip", direct_fns=direct_fns, quiet=T)
+    areas <- github_spatial_import(subfolder="offshore", "offshore.zip", quiet=T)
   }
   if(!repo =='github')
   {
@@ -654,7 +656,7 @@ Survey.design <- function(yr = as.numeric(format(Sys.time(), "%Y")) ,direct, exp
           if(nrow(extras) > 0) 
           {
             extras$STRATA <- "extra"
-            tmp <- full_join(tmp, extras)
+            tmp <- full_join(data.frame(tmp), data.frame(extras)) # DK added the data.frame on Feb 27, 2025, not tested here...
           }
           
           tmp.sf <- st_as_sf(tmp,crs= 4326,coords = c("X","Y"))
@@ -677,7 +679,7 @@ Survey.design <- function(yr = as.numeric(format(Sys.time(), "%Y")) ,direct, exp
           # So what do we want to do with the points, first plots the station numbers
           if(point.style == "stn_num") bp2 <- bp + geom_sf_text(data=tmp.sf,aes(label = EID),size=pt.txt.sz) #text(towlst[[i]]$Tows$X,towlst[[i]]$Tows$Y,label=towlst[[i]]$Tows$EID,col='black', cex=0.6)
           # This just plots the points
-          if(point.style == "points")  bp2 <- bp + geom_sf(data=tmp.sf,aes(shape=`Tow type`, fill=`Tow type`),size=pt.txt.sz/2) + scale_shape_manual(values=shapes) + scale_shape_fill(values=cols)
+          if(point.style == "points")  bp2 <- bp + geom_sf(data=tmp.sf,aes(shape=`Tow type`, fill=`Tow type`),size=pt.txt.sz/2) + scale_shape_manual(values=shapes) + scale_fill_manual(values=cols)
           # Note regarding point colours. Sometimes points fall on the border between strata so it appears that they are mis-coloured. To check this,
           # run above line WITHOUT bg part to look at where the points fell and to make sure thay they are coloured correctly. It's not 
           # a coding issue, but if it looks like it will be impossible for the tow to occur within a tiny piece of strata, re-run the plots with a diff seed.
@@ -905,7 +907,7 @@ Survey.design <- function(yr = as.numeric(format(Sys.time(), "%Y")) ,direct, exp
           if(nrow(extras) > 0) 
           {
             extras$STRATA <- "extra"
-            tmp <- full_join(tmp, extras)
+            tmp <- full_join(data.frame(tmp), data.frame(extras))
           }
           
           tmp.sf <- st_as_sf(tmp,crs= 4326,coords = c("X","Y"))
